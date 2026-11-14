@@ -1,0 +1,21 @@
+# Python environments
+.venv/
+backend/env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# React dependencies
+frontend/node_modules/
+frontend/dist/
+
+# Editor files
+.vscode/
+.DS_Store
+Thumbs.db
