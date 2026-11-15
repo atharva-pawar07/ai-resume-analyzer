@@ -13,3 +13,4 @@ class ResumeCreate(BaseModel):
 
 class ResumeResponse(ResumeCreate):
     id: int
+    resume_text: str | None = None

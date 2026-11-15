@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+email-validator
+sqlalchemy
+asyncpg
+python-dotenv
+greenlet
+alembic
+pwdlib[argon2]
+PyJWT
+PyMuPDF
+python-multipart

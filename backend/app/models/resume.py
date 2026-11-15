@@ -46,6 +46,9 @@ class Resume(Base):
         nullable=False,
         default=0
     )
+    resume_text: Mapped[str | None] = mapped_column(
+    nullable=True
+)
 
     # Foreign key connecting resume to its owner
     user_id: Mapped[int] = mapped_column(

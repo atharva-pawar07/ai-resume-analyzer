@@ -1,5 +1,13 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    UploadFile,
+    File
+)
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -9,7 +17,12 @@ from backend.app.core.dependencies import get_current_user
 from backend.app.models.resume import Resume
 from backend.app.models.user import User
 
-from backend.app.schemas.resume import ResumeCreate, ResumeResponse
+from backend.app.schemas.resume import (
+    ResumeCreate,
+    ResumeResponse
+)
+
+from backend.app.services.pdf_service import extract_text_from_pdf
 
 
 router = APIRouter(
@@ -43,7 +56,10 @@ async def create_resume(
 
 
 # GET ALL RESUMES BELONGING TO CURRENT USER
-@router.get("/", response_model=list[ResumeResponse])
+@router.get(
+    "/",
+    response_model=list[ResumeResponse]
+)
 async def get_resumes(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -60,7 +76,10 @@ async def get_resumes(
 
 
 # GET SINGLE RESUME BELONGING TO CURRENT USER
-@router.get("/{resume_id}", response_model=ResumeResponse)
+@router.get(
+    "/{resume_id}",
+    response_model=ResumeResponse
+)
 async def get_resume(
     resume_id: int,
     db: AsyncSession = Depends(get_db),
@@ -85,7 +104,10 @@ async def get_resume(
 
 
 # UPDATE RESUME BELONGING TO CURRENT USER
-@router.put("/{resume_id}", response_model=ResumeResponse)
+@router.put(
+    "/{resume_id}",
+    response_model=ResumeResponse
+)
 async def update_resume(
     resume_id: int,
     resume_data: ResumeCreate,
@@ -143,4 +165,81 @@ async def delete_resume(
 
     return {
         "message": "Resume deleted successfully"
+    }
+
+
+# UPLOAD PDF RESUME
+@router.post("/{resume_id}/upload-pdf")
+async def upload_resume_pdf(
+    resume_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Check resume ownership
+    result = await db.execute(
+        select(Resume).where(
+            Resume.id == resume_id,
+            Resume.user_id == current_user.id
+        )
+    )
+
+    resume = result.scalar_one_or_none()
+
+    if resume is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found"
+        )
+
+    # Check PDF content type
+    if file.content_type != "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF files are allowed"
+        )
+
+    # Maximum file size: 5 MB
+    MAX_FILE_SIZE = 5 * 1024 * 1024
+
+    # Read at most 5 MB + 1 byte
+    pdf_bytes = await file.read(MAX_FILE_SIZE + 1)
+
+    # Check empty file
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty"
+        )
+
+    # Check file size
+    if len(pdf_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="PDF file size must not exceed 5 MB"
+        )
+
+    # Verify actual PDF signature
+    if not pdf_bytes.startswith(b"%PDF-"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid PDF file"
+        )
+
+    # Extract text
+    extracted_text = extract_text_from_pdf(pdf_bytes)
+
+    # Save extracted text
+    resume.resume_text = extracted_text
+
+    await db.commit()
+    await db.refresh(resume)
+
+    # Close uploaded file
+    await file.close()
+
+    return {
+        "message": "PDF uploaded and text extracted successfully",
+        "resume_id": resume.id,
+        "extracted_text": extracted_text
     }
