@@ -3,6 +3,7 @@ uvicorn[standard]
 email-validator
 sqlalchemy
 asyncpg
+aiosqlite
 python-dotenv
 greenlet
 alembic
