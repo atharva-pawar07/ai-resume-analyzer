@@ -1,4 +1,5 @@
 from backend.app.ai.recommendation_engine import generate_recommendations
+from backend.app.ai.resume_analyzer import extract_skills
 
 
 def test_generate_recommendations():
@@ -21,3 +22,33 @@ def test_generate_recommendations_with_unsupported_skill():
     result = generate_recommendations(["Unknown Technology"])
 
     assert result == []
+
+def test_extract_skills():
+    resume_text = """
+    I have experience with Python, FastAPI, React and PostgreSQL.
+    """
+
+    result = extract_skills(resume_text)
+
+    assert "Python" in result
+    assert "FastAPI" in result
+    assert "React" in result
+    assert "PostgreSQL" in result
+
+
+def test_extract_skills_is_case_insensitive():
+    resume_text = "I know python, FASTAPI, and react."
+
+    result = extract_skills(resume_text)
+
+    assert "Python" in result
+    assert "FastAPI" in result
+    assert "React" in result
+
+def test_extract_skills_does_not_match_partial_words():
+    resume_text = "I worked with PythonDeveloper and JavaScriptFramework."
+
+    result = extract_skills(resume_text)
+
+    assert "Python" not in result
+    assert "JavaScript" not in result

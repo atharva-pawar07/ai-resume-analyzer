@@ -1,9 +1,9 @@
-
-import asyncio
+import pytest
 from sqlalchemy import text
 from backend.app.core.database import engine
 
 
+@pytest.mark.asyncio
 async def test_connection():
     try:
         async with engine.connect() as connection:
@@ -11,15 +11,12 @@ async def test_connection():
                 text("SELECT current_database(), current_user")
             )
 
-            print("Database connection successful!")
-            print(result.fetchone())
+            row = result.fetchone()
 
-    except Exception as error:
-        print("Database connection failed!")
-        print(error)
+            assert row is not None
+
+            print("Database connection successful!")
+            print(row)
 
     finally:
         await engine.dispose()
-
-
-asyncio.run(test_connection())
