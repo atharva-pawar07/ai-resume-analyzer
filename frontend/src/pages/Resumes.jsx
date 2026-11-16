@@ -8,16 +8,23 @@ function Resumes() {
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [uploadingId, setUploadingId] = useState(null)
+
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', target_role: '',
-    skills: '', experience_years: 0,
+    name: '',
+    email: '',
+    phone: '',
+    target_role: '',
+    skills: '',
+    experience_years: 0,
   })
 
   async function loadResumes() {
     try {
-      setLoading(true)
-      setResumes(await apiRequest('/api/v1/resumes/'))
       setError('')
+      const data = await apiRequest('/api/v1/resumes/')
+      setResumes(data)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -29,30 +36,50 @@ function Resumes() {
     loadResumes()
   }, [])
 
-  function handleChange(e) {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+  function handleChange(event) {
+    const { name, value } = event.target
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }))
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
+  async function handleSubmit(event) {
+    event.preventDefault()
 
     try {
+      setError('')
+      setSuccess('')
+
+      const resumeData = {
+        ...formData,
+        skills: formData.skills
+          .split(',')
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+        experience_years: Number(formData.experience_years),
+      }
+
       await apiRequest('/api/v1/resumes/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
-          experience_years: Number(formData.experience_years),
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(resumeData),
       })
 
       setFormData({
-        name: '', email: '', phone: '', target_role: '',
-        skills: '', experience_years: 0,
+        name: '',
+        email: '',
+        phone: '',
+        target_role: '',
+        skills: '',
+        experience_years: 0,
       })
+
       setShowForm(false)
+      setSuccess('Resume added successfully!')
       await loadResumes()
     } catch (err) {
       setError(err.message)
@@ -60,88 +87,183 @@ function Resumes() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this resume?')) return
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this resume?'
+    )
+
+    if (!confirmed) return
 
     try {
-      await apiRequest(`/api/v1/resumes/${id}`, { method: 'DELETE' })
+      setError('')
+      setSuccess('')
+
+      await apiRequest(`/api/v1/resumes/${id}`, {
+        method: 'DELETE',
+      })
+
+      setSuccess('Resume deleted successfully!')
       await loadResumes()
     } catch (err) {
       setError(err.message)
     }
   }
 
-  return (
-    <div className="page-container resume-page">
-      <header className="topbar">
-        <div>
-          <h1>My Resumes</h1>
-          <p>Manage your professional profile and resumes.</p>
-        </div>
-      </header>
+  async function handlePdfUpload(resumeId, file) {
+    if (!file) return
 
-      <section className="resume-hero">
+    if (file.type !== 'application/pdf') {
+      setError('Only PDF files are allowed.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('PDF must be smaller than 5 MB.')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      setError('')
+      setSuccess('')
+      setUploadingId(resumeId)
+
+      await apiRequest(`/api/v1/resumes/${resumeId}/upload-pdf`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      setSuccess('Resume PDF uploaded successfully!')
+      await loadResumes()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploadingId(null)
+    }
+  }
+
+  return (
+    <div className="page-container">
+      <div className="resume-hero">
         <div>
-          <span className="resume-eyebrow">YOUR CAREER WORKSPACE</span>
-          <h2>Build your next career move.</h2>
-          <p>Organize your resumes and get ready for intelligent career analysis.</p>
-          <button className="resume-primary-btn" onClick={() => setShowForm(!showForm)}>
-            <Plus size={18} />
-            {showForm ? 'Cancel' : 'Add New Resume'}
-          </button>
+          <p className="resume-eyebrow">YOUR CAREER DOCUMENTS</p>
+          <h2>My Resumes</h2>
+          <p>
+            Manage your resumes and upload PDF files to start your career
+            analysis.
+          </p>
         </div>
-        <div className="resume-hero-icon">
-          <FileText size={76} />
-        </div>
-      </section>
+
+        <button
+          className="resume-primary-btn"
+          onClick={() => {
+            setShowForm(!showForm)
+            setError('')
+            setSuccess('')
+          }}
+        >
+          <Plus size={18} />
+          {showForm ? 'Close Form' : 'Add New Resume'}
+        </button>
+      </div>
 
       {error && <div className="resume-error">{error}</div>}
+      {success && <div className="resume-success">{success}</div>}
 
       {showForm && (
-        <section className="resume-form-card">
-          <h2>Add a New Resume</h2>
-          <p>Enter your professional details below.</p>
+        <div className="resume-form-card">
+          <h2>Add New Resume</h2>
 
           <form onSubmit={handleSubmit} className="resume-form">
-            <label>Full Name
-              <input name="name" placeholder="Your full name" value={formData.name} onChange={handleChange} minLength={2} maxLength={100} required />
-            </label>
-
-            <label>Email Address
-              <input name="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} required />
-            </label>
-
-            <label>Phone Number
-              <input name="phone" placeholder="Optional" value={formData.phone} onChange={handleChange} />
-            </label>
-
-            <label>Target Role
-              <input name="target_role" placeholder="e.g. Python Developer" value={formData.target_role} onChange={handleChange} required />
-            </label>
-
-            <label className="resume-full-width">Skills
-              <input name="skills" placeholder="Python, React, SQL..." value={formData.skills} onChange={handleChange} />
-            </label>
-
-            <label>Experience (Years)
-              <input name="experience_years" type="number" min="0" step="0.1" value={formData.experience_years} onChange={handleChange} required />
-            </label>
-
-            <div className="resume-full-width">
-              <button className="resume-primary-btn" type="submit">Save Resume</button>
+            <div>
+              <label>Full Name</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                minLength={2}
+                maxLength={100}
+                required
+              />
             </div>
+
+            <div>
+              <label>Email Address</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+
+            <div>
+              <label>Phone Number</label>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
+              />
+            </div>
+
+            <div>
+              <label>Target Job Role</label>
+              <input
+                type="text"
+                name="target_role"
+                value={formData.target_role}
+                onChange={handleChange}
+                placeholder="e.g. Python Developer"
+                required
+              />
+            </div>
+
+            <div>
+              <label>Skills</label>
+              <input
+                type="text"
+                name="skills"
+                value={formData.skills}
+                onChange={handleChange}
+                placeholder="Python, React, SQL"
+              />
+            </div>
+
+            <div>
+              <label>Experience (Years)</label>
+              <input
+                type="number"
+                name="experience_years"
+                value={formData.experience_years}
+                onChange={handleChange}
+                min="0"
+                step="0.5"
+              />
+            </div>
+
+            <button type="submit" className="resume-primary-btn">
+              Save Resume
+            </button>
           </form>
-        </section>
+        </div>
       )}
 
       <div className="resume-list-heading">
         <div>
-          <h2>Your Resumes</h2>
-          <p>{resumes.length} resume{resumes.length !== 1 ? 's' : ''} saved</p>
+          <h2>Your Saved Resumes</h2>
+          <p>{resumes.length} resume(s) saved</p>
         </div>
       </div>
 
       {loading ? (
-        <div className="resume-empty">Loading resumes...</div>
+        <p>Loading resumes...</p>
       ) : resumes.length === 0 ? (
         <div className="resume-empty">
           <FileText size={42} />
@@ -150,27 +272,71 @@ function Resumes() {
         </div>
       ) : (
         <div className="resume-grid">
-          {resumes.map(resume => (
-            <article className="resume-card" key={resume.id}>
-              <div className="resume-card-top">
-                <div className="resume-file-icon"><FileText size={25} /></div>
-                <button className="resume-delete-btn" onClick={() => handleDelete(resume.id)} title="Delete resume">
+          {resumes.map((resume) => (
+            <div className="resume-card" key={resume.id}>
+              <div className="resume-card-header">
+                <div className="resume-icon">
+                  <FileText size={22} />
+                </div>
+
+                <button
+                  className="resume-delete-btn"
+                  onClick={() => handleDelete(resume.id)}
+                  title="Delete resume"
+                >
                   <Trash2 size={18} />
                 </button>
               </div>
+
               <h3>{resume.name}</h3>
               <p className="resume-email">{resume.email}</p>
+
               <div className="resume-role">
                 <Briefcase size={16} />
-                {resume.target_role}
+                <span>{resume.target_role}</span>
               </div>
-              <p className="resume-experience">Experience: {resume.experience_years} years</p>
+
+              <p className="resume-experience">
+                Experience: {resume.experience_years} year(s)
+              </p>
+
               <div className="resume-skills">
-                {resume.skills.map((skill, index) => (
-                  <span key={index}>{skill}</span>
-                ))}
+                {resume.skills?.length > 0 ? (
+                  resume.skills.map((skill, index) => (
+                    <span key={`${skill}-${index}`}>{skill}</span>
+                  ))
+                ) : (
+                  <span>No skills added</span>
+                )}
               </div>
-            </article>
+
+              <div className="resume-upload-section">
+                <p className="resume-upload-status">
+                  {resume.resume_text
+                    ? 'PDF uploaded'
+                    : 'No PDF uploaded'}
+                </p>
+
+                <label className="resume-upload-btn">
+                  <Upload size={16} />
+                  {uploadingId === resume.id
+                    ? 'Uploading...'
+                    : 'Upload PDF'}
+
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    hidden
+                    disabled={uploadingId !== null}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      handlePdfUpload(resume.id, file)
+                      event.target.value = ''
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
           ))}
         </div>
       )}
