@@ -9,17 +9,45 @@ import {
   Bell
 } from 'lucide-react'
 
-import { NavLink, Routes, Route } from 'react-router-dom'
+import {
+  NavLink,
+  Routes,
+  Route,
+  Outlet,
+  Navigate
+} from 'react-router-dom'
 
 import Dashboard from './pages/Dashboard'
 import Resumes from './pages/Resumes'
 import Analysis from './pages/Analysis'
 import JobMatching from './pages/JobMatching'
 import Recommendations from './pages/Recommendations'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import ProtectedRoute from './components/ProtectedRoute'
+import { LogOut } from 'lucide-react'
+import { useAuth } from './context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 import './App.css'
 
-function App() {
+function LogoutButton() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    logout()
+    navigate('/login')
+  }
+
+  return (
+    <button onClick={handleLogout} title="Logout">
+      <LogOut size={18} />
+    </button>
+  )
+}
+
+function AppLayout() {
   return (
     <div className="app">
       <aside className="sidebar">
@@ -52,10 +80,11 @@ function App() {
           </NavLink>
         </nav>
 
-        <div className="sidebar-footer">
-          <UserCircle size={20} />
-          <span>My Account</span>
-        </div>
+       <div className="sidebar-footer">
+  <UserCircle size={20} />
+  <span>My Account</span>
+  <LogoutButton />
+</div>
       </aside>
 
       <main className="main-content">
@@ -70,15 +99,34 @@ function App() {
           </button>
         </header>
 
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/resumes" element={<Resumes />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/job-matching" element={<JobMatching />} />
-          <Route path="/recommendations" element={<Recommendations />} />
-        </Routes>
+        <Outlet />
       </main>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/resumes" element={<Resumes />} />
+        <Route path="/analysis" element={<Analysis />} />
+        <Route path="/job-matching" element={<JobMatching />} />
+        <Route path="/recommendations" element={<Recommendations />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
