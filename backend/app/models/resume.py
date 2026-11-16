@@ -1,6 +1,7 @@
 
 from sqlalchemy import String, Integer, Float, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import JSONB
 
 from backend.app.core.database import Base
@@ -36,10 +37,10 @@ class Resume(Base):
     )
 
     skills: Mapped[list[str]] = mapped_column(
-        JSONB,
-        nullable=False,
-        default=list
-    )
+    JSON().with_variant(JSONB, "postgresql"),
+    nullable=False,
+    default=list
+)
 
     experience_years: Mapped[float] = mapped_column(
         Float,

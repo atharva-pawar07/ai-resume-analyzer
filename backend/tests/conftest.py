@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import (
 
 from backend.app.core.database import Base, get_db
 from backend.app.models.user import User
+from backend.app.models.resume import Resume
+from backend.app.models.analysis import Analysis
+from backend.app.models.job import Job
 from backend.main import app
 
 
@@ -24,11 +27,18 @@ TestingSessionLocal = async_sessionmaker(
 
 @pytest_asyncio.fixture
 async def test_db(test_engine_cleanup):
+    test_tables = [
+        User.__table__,
+        Resume.__table__,
+        Analysis.__table__,
+        Job.__table__
+    ]
+
     async with test_engine.begin() as connection:
         await connection.run_sync(
             lambda sync_connection: Base.metadata.create_all(
                 sync_connection,
-                tables=[User.__table__]
+                tables=test_tables
             )
         )
 
@@ -39,7 +49,7 @@ async def test_db(test_engine_cleanup):
         await connection.run_sync(
             lambda sync_connection: Base.metadata.drop_all(
                 sync_connection,
-                tables=[User.__table__]
+                tables=test_tables
             )
         )
 
