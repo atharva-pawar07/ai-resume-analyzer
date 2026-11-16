@@ -23,7 +23,7 @@ TestingSessionLocal = async_sessionmaker(
 
 
 @pytest_asyncio.fixture
-async def test_db():
+async def test_db(test_engine_cleanup):
     async with test_engine.begin() as connection:
         await connection.run_sync(
             lambda sync_connection: Base.metadata.create_all(
