@@ -48,6 +48,7 @@ function LogoutButton() {
 }
 
 function AppLayout() {
+  const { user } = useAuth()
   return (
     <div className="app">
       <aside className="sidebar">
@@ -82,7 +83,7 @@ function AppLayout() {
 
        <div className="sidebar-footer">
   <UserCircle size={20} />
-  <span>My Account</span>
+  <span>{user?.full_name || 'My Account'}</span>
   <LogoutButton />
 </div>
       </aside>
