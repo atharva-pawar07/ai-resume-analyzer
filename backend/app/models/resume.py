@@ -46,18 +46,23 @@ class Resume(Base):
         nullable=False,
         default=0
     )
-    resume_text: Mapped[str | None] = mapped_column(
-    nullable=True
-)
 
-    # Foreign key connecting resume to its owner
+    resume_text: Mapped[str | None] = mapped_column(
+        nullable=True
+    )
+
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"),
         nullable=False
     )
 
-    # Relationship with User model
     user: Mapped["User"] = relationship(
         "User",
         back_populates="resumes"
+    )
+
+    analyses: Mapped[list["Analysis"]] = relationship(
+        "Analysis",
+        back_populates="resume",
+        cascade="all, delete-orphan"
     )
