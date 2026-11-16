@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react'
-import { FileText, Plus, Trash2, Briefcase, Upload } from 'lucide-react'
+import { FileText, Plus, Trash2, Briefcase, Upload, Brain } from 'lucide-react'
 import { apiRequest } from '../services/api'
 
 function Resumes() {
@@ -10,6 +10,7 @@ function Resumes() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [uploadingId, setUploadingId] = useState(null)
+  const [analyzingId, setAnalyzingId] = useState(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -140,6 +141,29 @@ function Resumes() {
       setError(err.message)
     } finally {
       setUploadingId(null)
+    }
+  }
+
+  async function handleAnalyze(resumeId) {
+    try {
+      setError('')
+      setSuccess('')
+      setAnalyzingId(resumeId)
+
+      const result = await apiRequest(
+        `/api/v1/resumes/${resumeId}/analyze`,
+        {
+          method: 'POST',
+        }
+      )
+
+      setSuccess(
+        `Analysis completed! Skill match: ${result.analysis.skill_match_percentage}%`
+      )
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setAnalyzingId(null)
     }
   }
 
@@ -336,6 +360,17 @@ function Resumes() {
                   />
                 </label>
               </div>
+
+              <button
+                className="resume-analyze-btn"
+                onClick={() => handleAnalyze(resume.id)}
+                disabled={!resume.resume_text || analyzingId !== null}
+              >
+                <Brain size={16} />
+                {analyzingId === resume.id
+                  ? 'Analyzing...'
+                  : 'Analyze Resume'}
+              </button>
             </div>
           ))}
         </div>
