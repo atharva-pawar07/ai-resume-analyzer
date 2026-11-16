@@ -1,6 +1,10 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from backend.main import app
+from datetime import datetime, timedelta, timezone
+import jwt
+from backend.app.core.security import SECRET_KEY, ALGORITHM
+
 
 
 @pytest.mark.asyncio
@@ -220,3 +224,52 @@ async def test_register_short_password(client):
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_login_unregistered_email(client):
+    response = await client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "unknown@example.com",
+            "password": "TestPassword123"
+        }
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid email or password"
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_with_invalid_token(client):
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={
+            "Authorization": "Bearer invalid.jwt.token"
+        }
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Could not validate credentials"
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_with_expired_token(client):
+    expired_token = jwt.encode(
+        {
+            "sub": "1",
+            "exp": datetime.now(timezone.utc) - timedelta(minutes=1)
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={
+            "Authorization": f"Bearer {expired_token}"
+        }
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Could not validate credentials"
