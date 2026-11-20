@@ -17,4 +17,5 @@ class JobMatchResponse(BaseModel):
     matched_skills: list[str]
     missing_skills: list[str]
     skill_match_percentage: float
+    text_similarity_percentage: float
     created_at: datetime

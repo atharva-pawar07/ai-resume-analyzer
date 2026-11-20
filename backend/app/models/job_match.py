@@ -63,6 +63,12 @@ class JobMatch(Base):
         nullable=False
     )
 
+    text_similarity_percentage: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

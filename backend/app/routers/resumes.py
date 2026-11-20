@@ -27,6 +27,11 @@ from backend.app.schemas.analysis import (
     ResumeAnalysisResponse,
     AnalysisHistoryResponse
 )
+from backend.app.ai.gemini_service import (
+    generate_ai_resume_analysis,
+    GeminiNotConfiguredError,
+    GeminiAnalysisError
+)
 
 from backend.app.services.pdf_service import extract_text_from_pdf
 from backend.app.ai.resume_analyzer import analyze_resume
@@ -404,8 +409,9 @@ async def get_resume_recommendations(
 
     # Generate recommendations from missing skills
     recommendations = generate_recommendations(
-        analysis.missing_skills
-    )
+    analysis.missing_skills,
+    analysis.target_role
+)
 
     return {
         "resume_id": resume_id,
@@ -414,3 +420,56 @@ async def get_resume_recommendations(
         "missing_skills": analysis.missing_skills,
         "recommendations": recommendations
     }
+# 10. Gemini AI Resume Analysis
+@router.post("/{resume_id}/ai-analysis")
+async def ai_resume_analysis(
+    resume_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Resume).where(
+            Resume.id == resume_id,
+            Resume.user_id == current_user.id
+        )
+    )
+
+    resume = result.scalar_one_or_none()
+
+    if resume is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found"
+        )
+
+    if not resume.resume_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please upload a PDF resume first"
+        )
+
+    try:
+        ai_result = generate_ai_resume_analysis(
+            resume.resume_text,
+            resume.target_role
+        )
+
+        return {
+            "message": "AI resume analysis completed",
+            "resume_id": resume.id,
+            "candidate_name": resume.name,
+            "target_role": resume.target_role,
+            "ai_analysis": ai_result
+        }
+
+    except GeminiNotConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc)
+        )
+
+    except GeminiAnalysisError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc)
+        )

@@ -847,3 +847,317 @@ body {
 .recommendation-card strong {
   color: #1e293b;
 }
+
+
+/* Job Matching Page */
+
+.job-section {
+  background: white;
+  padding: 24px;
+  margin-top: 24px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.section-heading h2,
+.job-section > h2 {
+  margin: 0 0 8px;
+  color: #172033;
+}
+
+.section-heading p {
+  color: #718096;
+  margin: 0;
+}
+
+.job-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.job-form label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.job-form input,
+.job-form textarea,
+.job-form select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font: inherit;
+  background: white;
+  box-sizing: border-box;
+}
+
+.job-form textarea {
+  resize: vertical;
+}
+
+.job-form input:focus,
+.job-form textarea:focus,
+.job-form select:focus {
+  outline: 2px solid #c7d2fe;
+  border-color: #6366f1;
+}
+
+.job-form button,
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #4f46e5;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.job-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.job-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  margin: 16px 0;
+  border-radius: 8px;
+}
+
+.error-message {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.success-message {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.job-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.job-card h3 {
+  margin: 0 0 6px;
+  color: #172033;
+}
+
+.job-card p {
+  margin: 0 0 8px;
+  color: #64748b;
+}
+
+.job-card span {
+  color: #718096;
+  font-size: 14px;
+}
+
+.delete-job-btn {
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.match-score {
+  text-align: center;
+  padding: 24px;
+  margin: 18px 0;
+  background: #eef2ff;
+  border-radius: 12px;
+}
+
+.match-score span {
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.match-score h2 {
+  font-size: 38px;
+  color: #4338ca;
+  margin: 10px 0 0;
+}
+
+.skills-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.skills-result h3 {
+  margin-bottom: 12px;
+}
+
+.skill-tag {
+  display: inline-block;
+  padding: 7px 11px;
+  margin: 4px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.skill-tag.matched {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.skill-tag.missing {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.history-score {
+  color: #4338ca;
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+@media (max-width: 650px) {
+  .skills-result {
+    grid-template-columns: 1fr;
+  }
+
+  .job-section {
+    padding: 17px;
+  }
+
+  .job-card {
+    align-items: flex-start;
+  }
+}
+
+/* Gemini AI Resume Analysis */
+
+.ai-analysis-section {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ai-analysis-section .analysis-heading {
+  margin-bottom: 18px;
+}
+
+.ai-analysis-section .analysis-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+
+.ai-analysis-section .analysis-heading p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.ai-analysis-section .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #5b4bdb;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ai-analysis-section .primary-button:hover {
+  background: #4635c5;
+}
+
+.ai-analysis-section .primary-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.ai-loading-message {
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.ai-analysis-results {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.ai-result-card {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.ai-result-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: #1e293b;
+}
+
+.ai-result-card p {
+  color: #475569;
+  line-height: 1.7;
+}
+
+.ai-result-card ul {
+  padding-left: 22px;
+  margin: 0;
+}
+
+.ai-result-card li {
+  margin-bottom: 10px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.ai-summary-card {
+  border-left: 4px solid #5b4bdb;
+}

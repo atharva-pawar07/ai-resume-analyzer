@@ -139,26 +139,26 @@ def normalize_role(target_role: str) -> str:
 # 4. EXTRACT SKILLS FROM RESUME
 # --------------------------------------------------
 
+
 def extract_skills(resume_text: str) -> list[str]:
     detected_skills = []
     text = resume_text.lower()
 
     for skill in SKILL_KEYWORDS:
-        pattern = (
-            r"(?<!\w)"
-            + re.escape(skill.lower())
-            + r"(?!\w)"
-        )
+        if skill == "REST API":
+            pattern = r"(?<!\w)rest\s+apis?(?!\w)"
+        else:
+            pattern = (
+                r"(?<!\w)"
+                + re.escape(skill.lower())
+                + r"(?!\w)"
+            )
 
         if re.search(pattern, text):
             detected_skills.append(skill)
 
     return detected_skills
 
-
-# --------------------------------------------------
-# 5. GET REQUIRED SKILLS FOR JOB ROLE
-# --------------------------------------------------
 
 def get_required_skills(target_role: str) -> list[str]:
     normalized_role = normalize_role(target_role)

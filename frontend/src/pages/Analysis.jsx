@@ -7,7 +7,9 @@ import {
   CheckCircle,
   XCircle,
   Lightbulb,
-  Code
+  Code,
+  Sparkles,
+  RefreshCw
 } from 'lucide-react'
 import { apiRequest } from '../services/api'
 
@@ -17,18 +19,30 @@ function Analysis() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [aiAnalysis, setAiAnalysis] = useState({})
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
+
   useEffect(() => {
     async function loadAnalysisReports() {
       try {
         setError('')
 
-        const resumes = await apiRequest('/api/v1/resumes/')
+        const resumesData = await apiRequest('/api/v1/resumes/')
+
+        const resumes = Array.isArray(resumesData)
+          ? resumesData
+          : resumesData?.resumes || []
 
         const reportGroups = await Promise.all(
           resumes.map(async (resume) => {
-            const analyses = await apiRequest(
+            const analysesData = await apiRequest(
               `/api/v1/resumes/${resume.id}/analyses`
             )
+
+            const analyses = Array.isArray(analysesData)
+              ? analysesData
+              : analysesData?.analyses || []
 
             return analyses.map((analysis) => ({
               ...analysis,
@@ -54,7 +68,7 @@ function Analysis() {
                 `/api/v1/resumes/${report.resume_id}/analyses/${report.id}/recommendations`
               )
 
-              return [report.id, data.recommendations]
+              return [report.id, data.recommendations || []]
             } catch {
               return [report.id, []]
             }
@@ -63,7 +77,7 @@ function Analysis() {
 
         setRecommendations(Object.fromEntries(recommendationResults))
       } catch (err) {
-        setError(err.message)
+        setError(err.message || 'Failed to load analysis reports.')
       } finally {
         setLoading(false)
       }
@@ -72,22 +86,54 @@ function Analysis() {
     loadAnalysisReports()
   }, [])
 
+  async function generateAIAnalysis(resumeId) {
+    setAiLoading(true)
+    setAiError('')
+
+    try {
+      const data = await apiRequest(
+        `/api/v1/resumes/${resumeId}/ai-analysis`,
+        { method: 'POST' }
+      )
+
+      setAiAnalysis((prev) => ({
+        ...prev,
+        [resumeId]: data.ai_analysis,
+      }))
+    } catch (err) {
+      setAiError(err.message || 'Failed to generate AI analysis.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   const detectedSkills = [
-    ...new Set(reports.flatMap((report) => report.detected_skills || [])),
+    ...new Set(
+      reports.flatMap((report) => report.detected_skills || [])
+    ),
   ]
 
   const missingSkills = [
-    ...new Set(reports.flatMap((report) => report.missing_skills || [])),
+    ...new Set(
+      reports.flatMap((report) => report.missing_skills || [])
+    ),
   ]
 
   const averageMatch = reports.length
     ? (
         reports.reduce(
-          (total, report) => total + report.skill_match_percentage,
+          (total, report) =>
+            total + (report.skill_match_percentage || 0),
           0
         ) / reports.length
       ).toFixed(2)
-    : 0
+    : '0.00'
+
+  const latestReport = reports[0]
+
+  const latestAIAnalysis = latestReport
+    ? aiAnalysis[latestReport.resume_id]
+    : null
 
   return (
     <div className="page-container">
@@ -106,7 +152,9 @@ function Analysis() {
         </p>
       </section>
 
-      {error && <div className="resume-error">{error}</div>}
+      {error && (
+        <div className="resume-error">{error}</div>
+      )}
 
       <section className="stats">
         <div className="stat-card">
@@ -150,7 +198,10 @@ function Analysis() {
         ) : (
           <div className="analysis-report-list">
             {reports.map((report) => (
-              <article className="analysis-report-card" key={report.id}>
+              <article
+                className="analysis-report-card"
+                key={report.id}
+              >
                 <div className="analysis-report-header">
                   <div>
                     <h3>{report.resume_name}</h3>
@@ -169,11 +220,11 @@ function Analysis() {
                 <div className="analysis-skills-section">
                   <h4>
                     <CheckCircle size={17} />
-                    Matched Skills ({report.matched_skills.length})
+                    Matched Skills ({report.matched_skills?.length || 0})
                   </h4>
 
                   <div className="analysis-skill-list">
-                    {report.matched_skills.length > 0 ? (
+                    {report.matched_skills?.length > 0 ? (
                       report.matched_skills.map((skill) => (
                         <span className="matched-skill" key={skill}>
                           {skill}
@@ -188,11 +239,11 @@ function Analysis() {
                 <div className="analysis-skills-section">
                   <h4>
                     <XCircle size={17} />
-                    Missing Skills ({report.missing_skills.length})
+                    Missing Skills ({report.missing_skills?.length || 0})
                   </h4>
 
                   <div className="analysis-skill-list">
-                    {report.missing_skills.length > 0 ? (
+                    {report.missing_skills?.length > 0 ? (
                       report.missing_skills.map((skill) => (
                         <span className="missing-skill" key={skill}>
                           {skill}
@@ -208,7 +259,7 @@ function Analysis() {
                   <h4>All Detected Skills</h4>
 
                   <div className="analysis-skill-list">
-                    {report.detected_skills.map((skill) => (
+                    {(report.detected_skills || []).map((skill) => (
                       <span className="detected-skill" key={skill}>
                         {skill}
                       </span>
@@ -222,7 +273,7 @@ function Analysis() {
                     Skill Improvement Recommendations
                   </h4>
 
-                  {!recommendations[report.id] ? (
+                  {recommendations[report.id] === undefined ? (
                     <p>Loading recommendations...</p>
                   ) : recommendations[report.id].length === 0 ? (
                     <p>No recommendations available for this report.</p>
@@ -247,6 +298,127 @@ function Analysis() {
                     ))
                   )}
                 </div>
+
+                {report.id === latestReport?.id && (
+                  <div className="ai-analysis-section">
+                    <div className="analysis-heading">
+                      <div>
+                        <h3>
+                          <Sparkles size={20} />
+                          Gemini AI Resume Analysis
+                        </h3>
+                        <p>
+                          Get AI-powered feedback and personalized
+                          improvement suggestions for your resume.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      className="primary-button"
+                      onClick={() => generateAIAnalysis(report.resume_id)}
+                      disabled={aiLoading}
+                    >
+                      {aiLoading ? (
+                        <>
+                          <RefreshCw size={17} />
+                          Generating AI Analysis...
+                        </>
+                      ) : latestAIAnalysis ? (
+                        <>
+                          <RefreshCw size={17} />
+                          Regenerate AI Analysis
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={17} />
+                          Generate AI Analysis
+                        </>
+                      )}
+                    </button>
+
+                    {aiError && (
+                      <div className="resume-error">{aiError}</div>
+                    )}
+
+                    {aiLoading && (
+                      <p className="ai-loading-message">
+                        Gemini is reviewing your resume. This may take
+                        a little time.
+                      </p>
+                    )}
+
+                    {latestAIAnalysis && (
+                      <div className="ai-analysis-results">
+                        <div className="ai-result-card">
+                          <h4>Overall Assessment</h4>
+                          <p>{latestAIAnalysis.overall_assessment}</p>
+                        </div>
+
+                        <div className="ai-result-card">
+                          <h4>
+                            <CheckCircle size={17} />
+                            Strengths
+                          </h4>
+                          <ul>
+                            {(latestAIAnalysis.strengths || []).map(
+                              (item, index) => (
+                                <li key={index}>{item}</li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+
+                        <div className="ai-result-card">
+                          <h4>
+                            <XCircle size={17} />
+                            Missing Skills
+                          </h4>
+                          <ul>
+                            {(latestAIAnalysis.missing_skills || []).map(
+                              (item, index) => (
+                                <li key={index}>{item}</li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+
+                        <div className="ai-result-card">
+                          <h4>
+                            <Lightbulb size={17} />
+                            Improvement Suggestions
+                          </h4>
+                          <ul>
+                            {(latestAIAnalysis.improvement_suggestions || []).map(
+                              (item, index) => (
+                                <li key={index}>{item}</li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+
+                        <div className="ai-result-card">
+                          <h4>
+                            <Code size={17} />
+                            Recommended Projects
+                          </h4>
+                          <ul>
+                            {(latestAIAnalysis.recommended_projects || []).map(
+                              (item, index) => (
+                                <li key={index}>{item}</li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+
+                        <div className="ai-result-card ai-summary-card">
+                          <h4>Final Summary</h4>
+                          <p>{latestAIAnalysis.summary}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </article>
             ))}
           </div>

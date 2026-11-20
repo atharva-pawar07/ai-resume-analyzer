@@ -32,7 +32,10 @@ class AnalysisHistoryResponse(BaseModel):
 
 class SkillRecommendation(BaseModel):
     skill: str
+    priority: str
+    duration: str
     reason: str
+    topics: list[str]
     suggestion: str
     project: str
 
